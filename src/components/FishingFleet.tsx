@@ -272,7 +272,7 @@ function CrewPanel({ shipId, onClose }: { shipId: number; onClose: () => void })
   const [active, setActive] = useState<string | null>(null);
   const art = useArtworkMap();
   return (
-    <div className="daily-overlay" role="dialog" aria-modal="true" aria-label={`طاقم السفينة ${shipId}`} onClick={onClose} dir="rtl">
+    <div className="daily-overlay" role="dialog" aria-modal="true" aria-label={`طاقم السفينة ${shipId}`} onClick={onClose} dir="rtl" style={{ pointerEvents: "auto" }}>
       <div className="daily-panel crew-war" onClick={(event) => event.stopPropagation()}>
         <button type="button" aria-label="إغلاق" onClick={onClose} className="tos-x"><X className="h-4 w-4" /></button>
         <header className="daily-head">
