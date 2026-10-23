@@ -63,7 +63,7 @@ export function FishingFleet({ themeId, themeName, seaEngine }: { themeId: strin
   const activeHull = resolveShipArtwork(artwork, catalogId, "idle", bundledHull);
   const timers = useRef<number[]>([]);
   /** The sea always shows the first boat of the catalog, drawn inside the water by the engine. */
-  const seaHull = fleetCatalog[hullIndex]?.hull ?? fleetCatalog[0]!.hull;
+  const seaHull = bundledHull;
 
   // Stream each hull's on-screen spot into the WebGL sea so it sinks into the waves.
   useEffect(() => {
