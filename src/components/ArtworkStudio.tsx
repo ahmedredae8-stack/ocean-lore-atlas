@@ -135,7 +135,7 @@ export function ArtworkStudio() {
       </>;
     })()}
     <h3>وضعيات: {item.name}</h3>
-    <input ref={fileRef} type="file" accept="image/png" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
     <div className="art-library" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 }}>
       {poses[category].map(([pose, label]) => {
         const rec = poseRecord(pose);
