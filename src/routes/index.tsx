@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 
@@ -12,8 +12,8 @@ import { TopHud } from "@/components/TopHud";
 import { DailyReward } from "@/components/DailyReward";
 import { QuestBoard } from "@/components/QuestBoard";
 import { CaptainGate } from "@/components/CaptainGate";
-import { SeaStudio, loadStudio } from "@/components/SeaStudio";
-import SeaScene, { type SeaParams } from "@/components/SeaScene";
+import { SeaStudio, loadStudio, hasSavedStudio, STUDIO_EVENT, type StudioConfig } from "@/components/SeaStudio";
+import SeaScene, { type SeaEngine, type SeaParams } from "@/components/SeaScene";
 import { SEA_WORLDS, SEA_WORLD_EVENT, getSeaWorld, loadSeaWorldId } from "@/lib/seaWorld";
 import { BottomDock, type DockAction } from "@/components/BottomDock";
 import { FishingFleet } from "@/components/FishingFleet";
@@ -61,6 +61,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+/** Lively default swell for the home sea until the player saves a studio setup. */
+const STORMY: SeaParams = { amp: 1.7, spd: 1.5, ref: 1.4, sun: 1, foam: 1.2, rip: 1.4 };
+
 /** Every destination lives as a floating window over the living sea. */
 type Win = "chat" | "settings" | "studio" | "fish" | "ship" | "trade-fish" | "trade-ship" | "stats" | "bag" | "alerts" | "enemies" | "tribe" | null;
 
@@ -83,12 +86,17 @@ function Index() {
   const [seaWorldId, setSeaWorldId] = useState(SEA_WORLDS[0]!.id);
   const [seaParams, setSeaParams] = useState<SeaParams>({});
   const seaWorld = getSeaWorld(seaWorldId);
+  const seaEngine = useRef<SeaEngine | null>(null);
   useEffect(() => {
-    setSeaWorldId(loadSeaWorldId());
-    setSeaParams(loadStudio().params);
+    // Studio edits (scene + water dials) drive the home sea; ship placement stays on its lanes.
+    const applyStudio = (c: StudioConfig) => { setSeaParams(c.params); setSeaWorldId(c.themeId); };
+    if (hasSavedStudio()) applyStudio(loadStudio());
+    else { setSeaWorldId(loadSeaWorldId()); setSeaParams(STORMY); }
     const onWorld = (e: Event) => setSeaWorldId(String((e as CustomEvent).detail));
+    const onStudio = (e: Event) => applyStudio((e as CustomEvent<StudioConfig>).detail);
     window.addEventListener(SEA_WORLD_EVENT, onWorld);
-    return () => window.removeEventListener(SEA_WORLD_EVENT, onWorld);
+    window.addEventListener(STUDIO_EVENT, onStudio);
+    return () => { window.removeEventListener(SEA_WORLD_EVENT, onWorld); window.removeEventListener(STUDIO_EVENT, onStudio); };
   }, []);
 
   // Flip the world between day and night on the player's own clock.
@@ -151,7 +159,7 @@ function Index() {
       <main className="game-stage relative overflow-hidden bg-[oklch(0.15_0.04_250)]">
       {/* Living scene: the WebGL sea engine, so boats sit inside the water */}
       <div className="scene-stage">
-        <SeaScene theme={seaWorld} ships={[]} params={seaParams} className="scene-video scene-sea" style={{ aspectRatio: "auto", width: "100%", height: "100%" }} />
+        <SeaScene theme={seaWorld} params={seaParams} onEngine={(e) => (seaEngine.current = e)} className="scene-video scene-sea" style={{ aspectRatio: "auto", width: "100%", height: "100%" }} />
 
         {hotspots.map((h) => (
           <button
@@ -166,7 +174,7 @@ function Index() {
             <span className="hotspot-ring" />
           </button>
         ))}
-        <FishingFleet themeId={themeId} themeName={theme.name} />
+        <FishingFleet themeId={themeId} themeName={theme.name} seaEngine={seaEngine} />
       </div>
 
       {/* Top HUD */}

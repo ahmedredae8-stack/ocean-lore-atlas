@@ -2972,3 +2972,7 @@
 .sea-world-live span { position: absolute; inset-inline-start: 0.6rem; bottom: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 999px; background: oklch(0.14 0.04 250 / 0.8); color: var(--gold); font-weight: 900; font-size: 0.8rem; }
 .scene-sea { position: absolute; inset: 0; }
 .shield-thumb { display: grid; place-items: center; width: 100%; height: 100%; }
+
+/* Home sea: hulls are painted inside the water by the sea engine; DOM keeps only hit areas. */
+.fleet-in-sea .ship-frame { opacity: 0 !important; }
+.fleet-in-sea .fishing-ripple { display: none; }

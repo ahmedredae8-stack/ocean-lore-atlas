@@ -11,6 +11,7 @@ const THEMES = seaThemes as unknown as Theme[];
 
 export type StudioConfig = { themeId: string; params: SeaParams; ships: SeaShip[] };
 const KEY = "ib.seaStudio";
+export const STUDIO_EVENT = "ib:sea-studio";
 const DEFAULT_PARAMS: Required<SeaParams> = { amp: 1, spd: 1, ref: 1, sun: 1, foam: 0.7, rip: 1, paused: false };
 const DEFAULT: StudioConfig = {
   themeId: THEMES[0]!.id,
@@ -18,8 +19,9 @@ const DEFAULT: StudioConfig = {
   ships: [{ id: "s1", src: fleetCatalog[0]!.hull, x: 0.62, y: 0.8, width: 0.34, waterline: 0.9 }],
 };
 
+export function hasSavedStudio() { try { return !!localStorage.getItem(KEY); } catch { return false; } }
 export function loadStudio(): StudioConfig {
-  try { const raw = localStorage.getItem(KEY); if (raw) return { ...DEFAULT, ...JSON.parse(raw) }; } catch { /* ignore */ }
+  try { const raw = localStorage.getItem(KEY); if (raw) { const c = { ...DEFAULT, ...JSON.parse(raw) }; if (!THEMES.some((t) => t.id === c.themeId)) c.themeId = THEMES[0]!.id; return c; } } catch { /* ignore */ }
   return DEFAULT;
 }
 
@@ -82,7 +84,7 @@ export function SeaStudio() {
   };
 
   const save = () => {
-    try { localStorage.setItem(KEY, JSON.stringify(cfg)); setSaved("تم حفظ بحرك"); playSfx("click", 0.8); }
+    try { localStorage.setItem(KEY, JSON.stringify(cfg)); window.dispatchEvent(new CustomEvent(STUDIO_EVENT, { detail: cfg })); setSaved("تم حفظ بحرك وطُبّق على بحرك الرئيسي"); playSfx("click", 0.8); }
     catch { setSaved("تعذّر الحفظ"); }
   };
 

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import type { SeaEngine } from "@/components/SeaScene";
 import { X } from "lucide-react";
 
 import { fleetCatalog, hulls, type ShipPose } from "@/lib/fleetCatalog";
@@ -43,7 +44,8 @@ const atSea: ShipState[] = ["sailingOut", "turning", "casting", "fishing", "haul
 const facingShore: ShipState[] = ["turning", "casting", "fishing", "hauling", "sailingHome"];
 const busyStates: ShipState[] = ["sailingOut", "turning", "casting", "hauling", "sailingHome"];
 
-export function FishingFleet({ themeId, themeName }: { themeId: string; themeName: string }) {
+export function FishingFleet({ themeId, themeName, seaEngine }: { themeId: string; themeName: string; seaEngine?: RefObject<SeaEngine | null> }) {
+  const layer = useRef<HTMLDivElement>(null);
   const artwork = useArtworkMap();
   const [ships, setShips] = useState(initialFleet);
   const [lanes, setLanes] = useState<Lane[]>(defaultLanes);
@@ -60,6 +62,35 @@ export function FishingFleet({ themeId, themeName }: { themeId: string; themeNam
   const bundledHull = fleetCatalog.find((s) => s.id === catalogId)?.hull ?? hulls[hullIndex] ?? hulls[0] ?? "";
   const activeHull = resolveShipArtwork(artwork, catalogId, "idle", bundledHull);
   const timers = useRef<number[]>([]);
+  /** The sea always shows the first boat of the catalog, drawn inside the water by the engine. */
+  const seaHull = bundledHull;
+
+  // Stream each hull's on-screen spot into the WebGL sea so it sinks into the waves.
+  useEffect(() => {
+    if (!seaEngine) return;
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const host = layer.current, eng = seaEngine.current;
+      if (!host || !eng) return;
+      const r = host.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const list = Array.from(host.querySelectorAll<HTMLElement>("[data-sea-ship]")).map((el) => {
+        const b = el.getBoundingClientRect();
+        return {
+          id: el.dataset.seaShip!,
+          src: seaHull,
+          x: (b.left + b.width / 2 - r.left) / r.width,
+          y: (b.top + b.height * 0.72 - r.top) / r.height,
+          width: (b.width / r.width) * 0.92,
+          waterline: 0.86,
+        };
+      });
+      eng.setShips(list);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); seaEngine.current?.setShips([]); };
+  }, [seaEngine, seaHull]);
   const [haul, setHaul] = useState<ReturnType<typeof rollHaul> | null>(null);
   const [haulSaved, setHaulSaved] = useState<boolean | null>(null);
 
@@ -126,7 +157,7 @@ export function FishingFleet({ themeId, themeName }: { themeId: string; themeNam
   };
 
   return (
-    <div className={`fleet-layer ${assetsReady ? "fleet-ready" : ""}`} aria-label="أسطول الصيد" aria-busy={!assetsReady}>
+    <div ref={layer} className={`fleet-layer ${assetsReady ? "fleet-ready" : ""} ${seaEngine ? "fleet-in-sea" : ""}`} aria-label="أسطول الصيد" aria-busy={!assetsReady}>
       {ships.map((ship, index) => {
         if (ship.state === "sold") return null;
         const lane = lanes[index];
@@ -148,7 +179,7 @@ export function FishingFleet({ themeId, themeName }: { themeId: string; themeNam
           ship.state === "sailingOut" || ship.state === "sailingHome" ? "fleet-ship-moving" : "",
         ].filter(Boolean).join(" ");
         return (
-          <div key={ship.id} className={laneClasses} style={style}>
+          <div key={ship.id} className={laneClasses} style={style} data-sea-ship={ship.id}>
             {selected === ship.id && !busy && (
               <div className="ship-actions" role="menu" aria-label={`أوامر السفينة ${ship.id}`}>
                 <button type="button" role="menuitem" className="ship-orb ship-orb-sail" onClick={() => sail(ship)} title={ship.state === "docked" ? "الذهاب للصيد" : "العودة للميناء"}>
@@ -172,7 +203,6 @@ export function FishingFleet({ themeId, themeName }: { themeId: string; themeNam
               aria-label={`السفينة ${ship.id}${busy ? " تتحرك" : ""}`}
               onClick={() => { setSelected((current) => current === ship.id ? null : ship.id); playSfx("click", 0.6); }}
             >
-              <span className="ship-water-shadow" />
               <span className={`ship-flip ${facingShore.includes(ship.state) ? "ship-flip-turned" : ""}`} aria-hidden="true">
                 <span className="ship-bob">
                   <img
@@ -242,7 +272,7 @@ function CrewPanel({ shipId, onClose }: { shipId: number; onClose: () => void })
   const [active, setActive] = useState<string | null>(null);
   const art = useArtworkMap();
   return (
-    <div className="daily-overlay" role="dialog" aria-modal="true" aria-label={`طاقم السفينة ${shipId}`} onClick={onClose} dir="rtl">
+    <div className="daily-overlay" role="dialog" aria-modal="true" aria-label={`طاقم السفينة ${shipId}`} onClick={onClose} dir="rtl" style={{ pointerEvents: "auto" }}>
       <div className="daily-panel crew-war" onClick={(event) => event.stopPropagation()}>
         <button type="button" aria-label="إغلاق" onClick={onClose} className="tos-x"><X className="h-4 w-4" /></button>
         <header className="daily-head">

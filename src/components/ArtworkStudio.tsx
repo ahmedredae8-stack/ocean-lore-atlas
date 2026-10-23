@@ -64,16 +64,17 @@ export function ArtworkStudio() {
   const upload = async (file: File) => {
     if (!item) return;
     const pose = pendingPose.current;
-    if (file.type !== "image/png" || file.size > 5 * 1024 * 1024) { setStatus("اختر صورة PNG شفافة لا تتجاوز 5 ميجابايت"); return; }
+    const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" } as Record<string, string>)[file.type];
+    if (!ext || file.size > 5 * 1024 * 1024) { setStatus("اختر صورة PNG أو JPG أو WebP لا تتجاوز 5 ميجابايت"); return; }
     setBusy(pose); setStatus("");
     try {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) { setStatus("سجل دخولك أولاً"); setBusy(null); return; }
-    const path = `${auth.user.id}/${crypto.randomUUID()}.png`;
-    const { error: upErr } = await supabase.storage.from("game-artwork").upload(path, file, { contentType: "image/png" });
+    const path = `${auth.user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("game-artwork").upload(path, file, { contentType: file.type });
     if (upErr) { setStatus("تعذّر رفع الصورة — تأكد من صلاحية المشرف."); setBusy(null); return; }
     const { error } = await supabase.from("artwork_poses").insert({ category, subject: item.key, pose, image_path: path, created_by: auth.user.id });
-    if (error) { await supabase.storage.from("game-artwork").remove([path]); setStatus("تعذّر حفظ الوضعية"); setBusy(null); return; }
+    if (error) { await supabase.storage.from("game-artwork").remove([path]); setStatus(`تعذّر حفظ الوضعية: ${error.message}`); setBusy(null); return; }
     const old = poseRecord(pose);
     if (old) { await supabase.from("artwork_poses").delete().eq("id", old.id); await supabase.storage.from("game-artwork").remove([old.image_path]); }
     setStatus(`تم نشر وضعية «${poses[category].find(([p]) => p === pose)?.[1]}» لـ ${item.name}`);
@@ -134,7 +135,7 @@ export function ArtworkStudio() {
       </>;
     })()}
     <h3>وضعيات: {item.name}</h3>
-    <input ref={fileRef} type="file" accept="image/png" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+    <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
     <div className="art-library" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 10 }}>
       {poses[category].map(([pose, label]) => {
         const rec = poseRecord(pose);
