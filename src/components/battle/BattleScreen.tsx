@@ -252,7 +252,7 @@ function Arena({ me, foe, first, seed, onClose }: { me: Player; foe: Player; fir
   return (
     <div className="bt-root bt-arena" dir="rtl" ref={root} role="dialog" aria-label="ساحة المعركة">
       <header className="bt-top">
-        <Side p={foe} hp={hpSum(view, "b")} total={total} />
+        <SideBar p={foe} hp={hpSum(view, "b")} total={total} />
         <div className="bt-round"><small>الجولة</small><b>{Math.min(view.round, CFG.rounds)}/{CFG.rounds}</b></div>
         <button type="button" className="tos-x bt-close" aria-label="انسحاب" onClick={onClose}><X className="h-4 w-4" /></button>
       </header>
@@ -328,7 +328,7 @@ function Arena({ me, foe, first, seed, onClose }: { me: Player; foe: Player; fir
   );
 }
 
-function Side({ p, hp, total }: { p: Player; hp: number; total: number }) {
+function SideBar({ p, hp, total }: { p: Player; hp: number; total: number }) {
   return (
     <div className="bt-side">
       <CaptainAvatar seed={p.avatar_index ?? 0} url={p.avatar_url} className="bt-side-photo" />
