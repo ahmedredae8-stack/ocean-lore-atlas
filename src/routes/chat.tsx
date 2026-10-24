@@ -9,6 +9,7 @@ import { initials, isOnline, timeLabel, type Message, type Player } from "@/lib/
 import { playSfx } from "@/lib/sound";
 import { myMembership } from "@/lib/tribes";
 import { Button } from "@/components/ui/button";
+import { ChatPanel } from "@/components/ChatPanel";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -26,12 +27,12 @@ export const Route = createFileRoute("/chat")({
 
 const PUBLIC = "public";
 
-export function ChatPage() {
+export function ChatPage({ peer }: { peer?: Player | null } = {}) {
   const { player, loading } = usePlayer();
 
   if (loading) return <Splash />;
   if (!player) return <Shell><SignInNotice /></Shell>;
-  return <Shell><ChatRoom me={player} /></Shell>;
+  return <Shell><ChatPanel me={player} peer={peer ?? null} /></Shell>;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
