@@ -88,7 +88,7 @@ function Arena({ me, foe, first, seed, onClose }: { me: Player; foe: Player; fir
   const [view, setView] = useState<DuelState>(state);
   const [phase, setPhase] = useState<"decide" | "play" | "over">("decide");
   const [timer, setTimer] = useState(CFG.decideSeconds);
-  const [pick, setPick] = useState<{ ship?: number; weapon?: string; mode: "attack" | "shield" | "move" | "pass"; target?: { ship: number; spot: number }; tier?: number }>({ mode: "attack" });
+  const [pick, setPick] = useState<{ ship?: number | undefined; weapon?: string | undefined; mode: "attack" | "shield" | "move" | "pass"; target?: { ship: number; spot: number } | undefined; tier?: number | undefined }>({ mode: "attack" });
   const [floats, setFloats] = useState<Float[]>([]);
   const [shieldFx, setShieldFx] = useState<ShieldFx>({});
   const [banner, setBanner] = useState("");
