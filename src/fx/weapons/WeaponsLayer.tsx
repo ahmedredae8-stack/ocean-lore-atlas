@@ -16,7 +16,7 @@ export type FireArgs = {
   from: Pt;                       // نقطة خروج المقذوف (فوهة على السطح، أو خط الماء للطوربيد)
   to: Pt;                         // مركز الهدف بالبكسل داخل هذه الطبقة
   outcome?: Outcome;              // hits[i].kind من حدث fire في duel.js
-  shieldColor?: string;           // عند blocked
+  shieldColor?: string | undefined;           // عند blocked
   track?: () => Pt;               // اختياري: موضع الهدف الحالي إن تحرك (صواريخ وطوربيد)
   onImpact?: () => void;          // لحظة الاصطدام الفعلية (اخصم الحياة هنا)
   onMissileImpact?: (index: number, outcome: Outcome) => void; // للصواريخ: عند كل صاروخ

@@ -78,7 +78,7 @@ export function FishingFleet({ themeId, themeName, seaEngine }: { themeId: strin
       const list = Array.from(host.querySelectorAll<HTMLElement>("[data-sea-ship]")).map((el) => {
         const b = el.getBoundingClientRect();
         return {
-          id: el.dataset.seaShip!,
+          id: el.dataset["seaShip"]!,
           src: seaHull,
           x: (b.left + b.width / 2 - r.left) / r.width,
           y: (b.top + b.height * 0.72 - r.top) / r.height,
