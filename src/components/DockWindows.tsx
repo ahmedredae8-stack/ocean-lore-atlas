@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Crown, Fish, Shield, Skull, Swords, Trophy, Users } from "lucide-react";
+import { Bell, Search, Crown, Fish, Shield, Skull, Swords, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { CaptainAvatar } from "@/components/GameSprite";
@@ -14,21 +14,34 @@ const boards = [
   { id: "tribes" as const, label: "ترتيب القبيلة في قتل الوحش", icon: Crown },
 ];
 
-export function RankingsWindow() {
+export function RankingsWindow({ onPick }: { onPick?: (p: Player) => void } = {}) {
   const [board, setBoard] = useState<Ranking>("events");
   const [players, setPlayers] = useState<Pick<Player, "id" | "name" | "score" | "avatar_index">[]>([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<Player[] | null>(null);
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 1) { setFound(null); return; }
+    const t = window.setTimeout(() => {
+      void supabase.from("players").select("*").ilike("name", `%${term.replace(/[%_]/g, "")}%`).limit(20).then(({ data }) => setFound((data ?? []) as Player[]));
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [q]);
   useEffect(() => {
     let active = true;
-    void supabase.from("players").select("id,name,score,avatar_index").order("score", { ascending: false }).limit(25).then(({ data }) => {
+    void supabase.from("players").select("*").order("score", { ascending: false }).limit(25).then(({ data }) => {
       if (active) { setPlayers(data ?? []); setLoading(false); }
     });
     return () => { active = false; };
   }, []);
   return <div className="dock-content">
+    <label className="pirate-search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث عن قرصان بالاسم…" aria-label="ابحث عن قرصان" /></label>
+    {found ? (found.length ? <ol className="ranking-list">{found.map((p) => <li key={p.id}><button type="button" className="pirate-row" onClick={() => onPick?.(p)}><CaptainAvatar seed={p.avatar_index ?? 0} url={p.avatar_url} className="ranking-avatar" /><strong>{p.name}</strong><span>عرض الملف</span></button></li>)}</ol> : <EmptyState icon={Users} title="لا يوجد قرصان بهذا الاسم" detail="جرّب جزءًا آخر من الاسم." />) : <>
     <nav className="dock-tabs dock-tabs-wrap" aria-label="تصنيفات اللاعبين">{boards.map(({ id, label, icon: Icon }) => <Button key={id} variant="ghost" className={board === id ? "dock-tab active" : "dock-tab"} onClick={() => setBoard(id)}><Icon size={16} />{label}</Button>)}</nav>
     <div className="dock-section-heading"><Trophy size={20} /><strong>{boards.find((item) => item.id === board)?.label}</strong></div>
-    {board !== "events" ? <EmptyState icon={Trophy} title="لا توجد نتائج مسجلة بعد" detail="ستظهر المراتب عند توفر سجل المنافسة لهذا التصنيف." /> : loading ? <p className="dock-loading">جارٍ تحميل الترتيب…</p> : players.length ? <ol className="ranking-list">{players.map((player, i) => <li key={player.id}><b className="ranking-position">{String(i + 1).padStart(2, "0")}</b><CaptainAvatar seed={player.avatar_index ?? 0} url={(player as { avatar_url?: string | null }).avatar_url} className="ranking-avatar" /><strong>{player.name}</strong><span>{(player.score ?? 0).toLocaleString("ar")} نقطة</span></li>)}</ol> : <EmptyState icon={Trophy} title="لا يوجد لاعبون في الترتيب بعد" detail="تظهر النتائج بعد بدء اللعب." />}
+    {board !== "events" ? <EmptyState icon={Trophy} title="لا توجد نتائج مسجلة بعد" detail="ستظهر المراتب عند توفر سجل المنافسة لهذا التصنيف." /> : loading ? <p className="dock-loading">جارٍ تحميل الترتيب…</p> : players.length ? <ol className="ranking-list">{players.map((player, i) => <li key={player.id} onClick={() => onPick?.(player as Player)} style={{ cursor: onPick ? "pointer" : undefined }}><b className="ranking-position">{String(i + 1).padStart(2, "0")}</b><CaptainAvatar seed={player.avatar_index ?? 0} url={(player as { avatar_url?: string | null }).avatar_url} className="ranking-avatar" /><strong>{player.name}</strong><span>{(player.score ?? 0).toLocaleString("ar")} نقطة</span></li>)}</ol> : <EmptyState icon={Trophy} title="لا يوجد لاعبون في الترتيب بعد" detail="تظهر النتائج بعد بدء اللعب." />}
+    </>}
   </div>;
 }
 
