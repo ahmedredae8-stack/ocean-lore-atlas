@@ -26,6 +26,8 @@ import { FishMarket } from "@/routes/fish-market";
 import { Shipyard } from "@/routes/shipyard";
 import { ChatPage } from "@/routes/chat";
 import { SettingsPage } from "@/routes/settings";
+import { PirateProfile } from "@/components/battle/PirateProfile";
+import { BattleScreen } from "@/components/battle/BattleScreen";
 import {
   currentPhase,
   defaultTheme,
@@ -76,6 +78,8 @@ function Index() {
   const [shopOpen, setShopOpen] = useState(false);
   const [questsOpen, setQuestsOpen] = useState(false);
   const [win, setWin] = useState<Win>(null);
+  const [profile, setProfile] = useState<import("@/lib/player").Player | null>(null);
+  const [foe, setFoe] = useState<import("@/lib/player").Player | null>(null);
   const [phase, setPhase] = useState(currentPhase());
 
   const theme = getTheme(themeId);
@@ -215,7 +219,9 @@ function Index() {
           <ChatPage />
         </GameWindow>
       )}
-       {win === "stats" && <GameWindow title="سجل القباطنة" size="lg" onClose={() => setWin(null)}><RankingsWindow /></GameWindow>}
+      {win === "stats" && <GameWindow title="سجل القباطنة" size="lg" onClose={() => setWin(null)}><RankingsWindow onPick={setProfile} /></GameWindow>}
+      {profile && !foe && <PirateProfile player={profile} isMe={profile.id === player?.id} onClose={() => setProfile(null)} onMessage={() => { setProfile(null); setWin("chat"); }} onAttack={() => { if (player) setFoe(profile); }} />}
+      {foe && player && <BattleScreen me={player} foe={foe} onClose={() => { setFoe(null); setProfile(null); }} />}
        {win === "bag" && <GameWindow title="مخزن العتاد" size="lg" onClose={() => setWin(null)}><InventoryWindow player={player} /></GameWindow>}
        {win === "alerts" && <GameWindow title="التنبيهات" size="lg" onClose={() => setWin(null)}><AlertsWindow /></GameWindow>}
        {win === "enemies" && <GameWindow title="قائمة الأعداء" size="lg" onClose={() => setWin(null)}><EnemiesWindow /></GameWindow>}
